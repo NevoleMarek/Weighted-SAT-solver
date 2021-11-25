@@ -90,6 +90,46 @@ class SimulatedAnnealing(ABC):
 
 
 class SA_WeightedSAT(SimulatedAnnealing):
+    """
+    Simulated annealing solver class for weighted SAT derived from
+    SimulatedAnnealing abstract class.
+
+    Parameters
+    ----------
+    formula : formula.Formula
+        Formula in CNF with weigths.
+
+    iter_limit : int, optional
+        Simulated annealing algorithm is stopped if it hasn't found
+        better next state (in terms of score function) in last iter_limit
+        iterations,
+        by default 100.
+
+    restart_limit : int, optional
+        Number of times simulated annealing is used on one instance,
+        by default 1.
+
+    alpha : float, optional
+        Parameter used in geometric cooling schedule, by default 0.99.
+
+    beta : int, optional
+        If set to value other than zero then geometric + linear cooling
+        schedule is used instead, by default 0.
+
+    temp_prob : float, optional
+        Value used in calculation of initial temperature, by default 0.8.
+
+    init_state : str, optional
+        Method used in initial state generation, by default 'zero'.
+        Possible values:
+        - 'zero' all variables set to value 0 (False)
+        - 'one' all variables set to value 1 (True)
+
+    next_state : str, optional
+        Operator used in searching for next state, by default 'random'.
+        Possible values:
+        - 'random' flip value of random variable
+    """
     def __init__(
         self,
         formula,
@@ -98,8 +138,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
         alpha = 0.99,
         beta = 0,
         temp_prob = 0.8,
-        init_state = '',
-        next_state = ''
+        init_state = 'zero',
+        next_state = 'random'
     ):
 
         super().__init__(
@@ -126,7 +166,7 @@ class SA_WeightedSAT(SimulatedAnnealing):
         pass
 
     def _cooling_schedule(self, temperature):
-        pass
+        return self.alpha * temperature + self.beta
 
     def _initial_temperature(self):
         pass
