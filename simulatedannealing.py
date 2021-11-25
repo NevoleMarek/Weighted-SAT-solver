@@ -166,7 +166,39 @@ class SA_WeightedSAT(SimulatedAnnealing):
         pass
 
     def _cooling_schedule(self, temperature):
+        """
+        Recalculate temperature with respect to attributes 'alpha' and 'beta'.
+
+        Parameters
+        ----------
+        temperature : Numeric type
+            Temperature
+
+        Returns
+        -------
+        Numeric type
+            New temperature
+        """
         return self.alpha * temperature + self.beta
 
     def _initial_temperature(self):
-        pass
+        """
+        Initial temperature calculation is divided to 2 steps.
+        First step is to find maximum delta of clauses that would be satisfied
+        and unsatisfied by any variable flip. Which approximates the worst
+        possible flip.
+        In second step calculate the temperature as if the flip found in step one
+        was to be accepted with 'temp_prob' probability.
+
+        Returns
+        -------
+        Numeric type
+            Temperature
+        """
+        cntr = dict()
+        for i in range(len(self.formula.literals)):
+            idx = i+1
+            cntr[idx] = abs(len(self.adj_list[idx]) - len(self.adj_list[-idx]))
+
+        delta = max(cntr.values()) * self.clause_weight
+        return abs(delta/math.log(self.temp_prob))
