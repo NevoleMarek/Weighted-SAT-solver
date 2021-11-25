@@ -25,6 +25,10 @@ class FormulaClauseCounter:
     def __getitem__(self, clause_id):
         return self.counter[clause_id]
 
+    def __iter__(self):
+        for clause in self.counter:
+            yield clause
+
     def _create_counter(self, formula):
         counter = []
         for clause in formula.clauses:
