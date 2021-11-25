@@ -3,7 +3,8 @@ from random import random
 
 import math
 
-from utils import FormulaAdjacencyList
+from initialstate import InitialState
+from utils import FormulaAdjacencyList, FormulaClauseCounter
 
 class SimulatedAnnealing(ABC):
     """ Abstract class of simulated annealing. """
@@ -119,13 +120,13 @@ class SA_WeightedSAT(SimulatedAnnealing):
     temp_prob : float, optional
         Value used in calculation of initial temperature, by default 0.8.
 
-    init_state : str, optional
+    init_method : str, optional
         Method used in initial state generation, by default 'zero'.
         Possible values:
         - 'zero' all variables set to value 0 (False)
         - 'one' all variables set to value 1 (True)
 
-    next_state : str, optional
+    next_method : str, optional
         Operator used in searching for next state, by default 'random'.
         Possible values:
         - 'random' flip value of random variable
@@ -138,8 +139,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
         alpha = 0.99,
         beta = 0,
         temp_prob = 0.8,
-        init_state = 'zero',
-        next_state = 'random'
+        init_method = 'zero',
+        next_method = 'random'
     ):
 
         super().__init__(
@@ -151,13 +152,20 @@ class SA_WeightedSAT(SimulatedAnnealing):
         self.beta = beta
         self.temp_prob = temp_prob
         self.eval = eval
-        self.init_state = init_state
-        self.next_state = next_state
+        self.init_method = init_method
+        self.next_method = next_method
         self.adj_list = FormulaAdjacencyList(formula)
+        self.counter = FormulaClauseCounter(formula)
         self.clause_weight = sum(formula.weights) + 1
+        self.n_satisfied = 0
 
     def _initial_state(self):
-        pass
+        init = InitialState(
+            self.init_method,
+            self.formula,
+            self.adj_list
+        )
+        return init.create_state()
 
     def _evaluate(self, state):
         pass

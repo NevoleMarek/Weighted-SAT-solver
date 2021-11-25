@@ -1,14 +1,8 @@
 class Clause:
-    """
-    Clause representing sum of literals
-    combined with counter data structure used for quick determination,
-    whether clause is satisfied or not.
-    """
+    """ Clause representing sum of literals. """
 
     def __init__(self, literals):
         self.literals = literals
-        self.sat_ls = 0
-        self.unsat_ls = 0
         self.size = len(literals)
 
     def __str__(self):
