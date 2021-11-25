@@ -130,6 +130,8 @@ dmypy.json
 
 *.ipynb
 
+*.sh
+
 report
 result
 run.py
