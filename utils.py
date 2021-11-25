@@ -12,8 +12,9 @@ class FormulaAdjacencyList:
         adj_list = dict()
         for i, clause in enumerate(formula.clauses):
             for l in clause.literals:
-                if abs(l) not in adj_list:
-                    adj_list[abs(l)] = set()
-                if i not in adj_list[abs(l)]:
-                    adj_list[abs(l)].add(i)
+                if l not in adj_list:
+                    adj_list[l] = set()
+                if -l not in adj_list:
+                    adj_list[-l] = set()
+                adj_list[l].add(i)
         return adj_list
