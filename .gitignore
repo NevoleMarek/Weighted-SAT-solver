@@ -132,3 +132,6 @@ dmypy.json
 
 report
 result
+run.py
+parse.py
+test.py
