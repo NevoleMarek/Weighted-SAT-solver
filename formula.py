@@ -48,8 +48,7 @@ class Formula:
                     line = [i.strip() for i in line.split()[1:-1]]
                     weights = [int(w) for w in line]
                     frml.weights = weights
-
-                if not line.startswith('c') and\
+                elif    not line.startswith('c') and\
                         not line.startswith('\n') and\
                         not line.startswith('p') and\
                         not line.startswith('%'):
