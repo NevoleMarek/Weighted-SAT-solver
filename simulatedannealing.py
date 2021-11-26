@@ -3,8 +3,7 @@ from random import random
 
 import math
 
-from initialstate import InitialState
-from utils import FormulaAdjacencyList, FormulaClauseCounter
+from utils import FormulaAdjacencyList, FormulaClauseCounter, State
 
 class SimulatedAnnealing(ABC):
     """ Abstract class of simulated annealing. """
@@ -151,27 +150,50 @@ class SA_WeightedSAT(SimulatedAnnealing):
         self.alpha = alpha
         self.beta = beta
         self.temp_prob = temp_prob
-        self.eval = eval
         self.init_method = init_method
         self.next_method = next_method
         self.adj_list = FormulaAdjacencyList(formula)
         self.counter = FormulaClauseCounter(formula)
         self.clause_weight = sum(formula.weights) + 1
-        self.n_satisfied = 0
+
+        self.init_m = {
+            'zero':self.__zero,
+            'one':self.__one
+        }
+        self.next_m = {
+            'random':self.__random
+        }
 
     def _initial_state(self):
-        init = InitialState(
-            self.init_method,
-            self.formula,
-            self.adj_list
-        )
-        return init.create_state()
+        return self.init_m[self.init_method]()
 
     def _evaluate(self, state):
-        pass
+        """
+        Evaluate score function. The way this score function is written,
+        it first prioritizes satisfying clauses over maximizing weight.
+
+        Parameters
+        ----------
+        state : State
+            State to be evaluated.
+
+        Returns
+        -------
+        int
+            Value of score function.
+        """
+        score = 0
+        for c in self.counter:
+            if c[0] > 0:
+                score += self.clause_weight
+        for var, val in self.assignment.items():
+            if val == 1:
+                score += self.formula.weights[var]
+        return score
+
 
     def _next_state(self, current_state):
-        pass
+        return self.next_m[self.next_method](current_state)
 
     def _cooling_schedule(self, temperature):
         """
@@ -204,9 +226,25 @@ class SA_WeightedSAT(SimulatedAnnealing):
             Temperature
         """
         cntr = dict()
-        for i in range(len(self.formula.literals)):
+        for i in range(self.formula.n_vars):
             idx = i+1
             cntr[idx] = abs(len(self.adj_list[idx]) - len(self.adj_list[-idx]))
 
         delta = max(cntr.values()) * self.clause_weight
         return abs(delta/math.log(self.temp_prob))
+
+    """
+    Initial state methods
+    """
+    def __zero(self):
+        pass
+
+    def __one(self):
+        pass
+
+    """
+    Next state methods
+    """
+    def __random(self, current_state):
+        pass
+
