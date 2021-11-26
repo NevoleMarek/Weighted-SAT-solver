@@ -1,3 +1,5 @@
+import copy
+
 class FormulaAdjacencyList:
     """ Class for Adjacency list of formula. """
     def __init__(self, formula):
@@ -34,3 +36,24 @@ class FormulaClauseCounter:
         for clause in formula.clauses:
             counter.append([0,0])
         return counter
+
+class State:
+    """
+    Class representing one state in search state space.
+
+    Parameters
+    ----------
+    assignment : dict
+        Dictionary with key value pairs, where key is variable and value
+        is truth value assigned to variable.
+    counter : FormulaClauseCounter
+        Counter data structure of 'assignment' used for efficient satisfied
+        clause lookup.
+    """
+    def __init__(self, assignment, counter):
+        self.assignment = assignment
+        self.counter = counter
+
+    def copy(self):
+        """ Copy itself. """
+        return copy.deepcopy(self)
