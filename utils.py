@@ -7,14 +7,14 @@ class FormulaAdjacencyList:
         return self.adjacency_list[literal]
 
     def _create_list(self, formula):
-        adj_list = dict()
+        adj_list = {var:set() for var in formula.variables[1:]}
+        adj_list.update({-var:set() for var in formula.variables[1:]})
         for i, clause in enumerate(formula.clauses):
             for l in clause.literals:
-                if l not in adj_list:
-                    adj_list[l] = set()
-                if -l not in adj_list:
-                    adj_list[-l] = set()
-                adj_list[l].add(i)
+                if l.is_negated:
+                    adj_list[-l.var].add(i)
+                else:
+                    adj_list[l.var].add(i)
         return adj_list
 
 class FormulaClauseCounter:
