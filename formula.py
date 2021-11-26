@@ -1,3 +1,25 @@
+class Literal:
+    """
+    Literal class
+
+    Parameters
+        ----------
+        var : int
+            Variable
+        is_negated : bool
+            True if literal is negated else False
+    """
+    def __init__(self, var, is_negated):
+        self.var = var
+        self.is_negated = is_negated
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        sign = '-' if self.is_negated else ''
+        return f'{sign}{self.var}'
+
 class Clause:
     """ Clause representing sum of literals. """
 
@@ -13,10 +35,11 @@ class Clause:
 
 class Formula:
     """ Formula in CNF with weights of literals. """
-    def __init__(self):
-        self.literals = []
-        self.weights = []
-        self.clauses = []
+    def __init__(self, variables, weights, clauses, n_vars):
+        self.variables = variables
+        self.weights = weights
+        self.clauses = clauses
+        self.n_vars = n_vars
 
     @classmethod
     def from_file(cls, path):
@@ -34,51 +57,40 @@ class Formula:
         Formula
             Instance of Formula class
         """
-        frml = cls()
+
         with open(path) as f:
+            clauses = []
             clause = []
             for line in f:
-                if line.startswith('w'):
-                    line = [i.strip() for i in line.split()[1:-1]]
-                    weights = [int(w) for w in line]
-                    frml.weights = weights
-                elif    not line.startswith('c') and\
-                        not line.startswith('\n') and\
-                        not line.startswith('p') and\
-                        not line.startswith('%'):
+                if line.startswith('p'):
+                    n_vars = int(line.split()[2])
+                    variables = [i for i in range(n_vars + 1)]
+                elif line.startswith('w'):
+                    weights = [int(i.strip()) for i in line.split()[1:-1]]
+                    weights.insert(0,0)
+
+                elif not line.startswith(('c','\n','%')):
                     line = [int(i.strip()) for i in line.split()]
                     for literal in line:
-                        if abs(literal) not in frml.literals and\
-                                abs(literal) > 0:
-                            frml.literals.append(abs(literal))
-                        if literal != 0:
-                            clause.append(literal)
-                        else:
+                        if literal == 0:
                             if clause:
-                                frml.clauses.append(Clause(clause))
+                                clauses.append(Clause(clause))
                                 clause = []
+                        else:
+                            var = abs(literal)
+                            negated = True if literal < 0 else False
+                            clause.append(Literal(var, negated))
             if clause: # For when 0 is not after last clause in file
-                frml.clauses.append(Clause(clause))
-        return frml
+                clauses.append(Clause(clause))
+        return cls(variables, weights, clauses, n_vars)
 
     def __str__(self):
-        clauses = str()
+        clauses = ''
         for clause in self.clauses:
-            clauses += '('
-            for literal in clause.literals:
-                literal_str = str()
-                sign = str()
-                if literal < 0:
-                    sign = '-'
-                    literal *= -1
-                quotient = literal
-                while quotient > 26:
-                    res = quotient % 26
-                    quotient = quotient // 26
-                    literal_str = chr(res + 64) + literal_str
-                literal_str = chr(quotient + 64) + literal_str
-                clauses += f'{sign}{literal_str}'
-                clauses += ' V '
-            clauses = clauses[:-3]
-            clauses += ') ∧ '
-        return clauses[:-3]
+            clauses += f'{"".join(str(clause.literals))}\n'
+        return (
+            f'# of vars: {self.n_vars}\n'
+            f'Weights  :{self.weights}\n'
+            f'Variables:{self.variables}\n'
+            f'Clauses  :\n{clauses}'
+        )
