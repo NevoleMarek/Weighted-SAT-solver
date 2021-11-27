@@ -14,6 +14,13 @@ class SimulatedAnnealing(ABC):
     ):
         self._iter_limit = iter_limit
         self._restart_limit = restart_limit
+        self._stats = {
+            'iterations':0,
+            'init':[]
+        }
+
+    def stats(self):
+        return self._stats
 
     @abstractmethod
     def _initial_state(self):
@@ -66,6 +73,7 @@ class SimulatedAnnealing(ABC):
         for _ in range(RESTART_LIMIT):
             current_state = self._initial_state()
             current_score = self._evaluate(current_state)
+            self._stats['init'].append(current_score)
             temperature = TEMP
 
             iter_count = 0
@@ -86,6 +94,8 @@ class SimulatedAnnealing(ABC):
                     iter_count += 1
 
                 temperature = self._cooling_schedule(temperature)
+                self._stats['iterations'] +=1
+
         return best_score, best_state
 
 
@@ -125,22 +135,27 @@ class SA_WeightedSAT(SimulatedAnnealing):
         - 'zero' all variables set to value 0 (False)
         - 'one' all variables set to value 1 (True)
         - 'random' variables are assign values of 0 or 1 randomly
+        - 'greedy' assign value according to counts of non-negated and negated
+                occurances of literals
 
     next_method : str, optional
-        Heuristic of neighborhood operator used in searching for next state, by default 'random'.
+        Heuristic of neighborhood operator used in searching for next state,
+        by default 'random'.
         Possible values:
         - 'random' flip value of random variable
+        - 'greedy' flip value of variable that results in highest possible score in
+                neighborhood of current state
     """
     def __init__(
         self,
         formula,
         iter_limit = 100,
-        restart_limit = 2,
+        restart_limit = 1,
         alpha = 0.99,
         beta = 0,
         temp_prob = 0.8,
-        init_method = 'zero',
-        next_method = 'random'
+        init_method = 'greedy',
+        next_method = 'greedy'
     ):
         super().__init__(
             iter_limit,
@@ -158,10 +173,12 @@ class SA_WeightedSAT(SimulatedAnnealing):
         self.init_m = {
             'zero':self.__zero,
             'one':self.__one,
-            'random':self.__random_init
+            'random':self.__random_init,
+            'greedy':self.__greedy_init
         }
         self.next_m = {
-            'random':self.__random_next
+            'random':self.__random_next,
+            'greedy':self.__greedy_next
         }
 
     def _initial_state(self):
@@ -259,6 +276,23 @@ class SA_WeightedSAT(SimulatedAnnealing):
         counter = self._compute_counter(assignment)
         return State(assignment, counter)
 
+    def __greedy_init(self):
+        """
+        Assign values greedily according to counts of occurances of negated
+        literals and non-negated literals.
+        """
+        def value(adj_list_var):
+            non_negated = len(adj_list_var[0])
+            negated = len(adj_list_var[1])
+            if non_negated != negated:
+                return 1 if non_negated > negated else 0
+            else:
+                return randint(0, 1)
+
+        assignment = {var:value(tpl) for var,tpl in self.adj_list}
+        counter = self._compute_counter(assignment)
+        return State(assignment, counter)
+
 
     """
     Next state methods
@@ -280,6 +314,29 @@ class SA_WeightedSAT(SimulatedAnnealing):
         next_state = current_state.copy()
         variable = choice(list(next_state.assignment.keys()))
         return self._flip(next_state, variable)
+
+    def __greedy_next(self, current_state):
+        """ Find the best state in neighborhood of 'current_state'. """
+        next_state = current_state.copy()
+        best_score = -1
+        best_variable = 0
+        best_variables = []
+        for variable in self.formula.variables[1:]:
+            next_state = self._flip(next_state, variable)
+            score = self._evaluate(next_state)
+            next_state = self._flip(next_state, variable)
+            if score > best_score:
+                best_score = score
+                best_variable = variable
+                best_variables.clear()
+                best_variables.append(variable)
+            elif score == best_score:
+                best_variables.append(variable)
+        if best_variable:
+            return self._flip(next_state, choice(best_variables))
+        else:
+            return next_state
+
 
     """
     State manipulation methods
