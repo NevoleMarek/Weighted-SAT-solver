@@ -6,7 +6,11 @@ Benchmark report link: TBA
 
 ## Problem description
 
-Given boolean formula ![f](https://latex.codecogs.com/svg.latex?F) of ![n](https://latex.codecogs.com/svg.latex?n) variables ![X](https://latex.codecogs.com/svg.latex?X%20%3D%20%28x_1%2C...%2Cx_n%29), vector of weights ![W](https://latex.codecogs.com/svg.latex?W%20%3D%20%28w_1%2C...%2Cw_n%29). Find an assignment ![Y](https://latex.codecogs.com/svg.latex?Y%20%3D%20%28y_1%2C...%2Cy_n%29) that satisfies formula  ![F](https://latex.codecogs.com/svg.latex?F)(![FYeq1](https://latex.codecogs.com/svg.latex?F%28Y%29%3D1)) and maximizes weight function ![c](https://latex.codecogs.com/svg.latex?c%28Y%2CW%29%20%3D%5Csum_%7Bi%3D1%7D%5En%20y_i%20w_i).
+Given boolean formula ![f](https://latex.codecogs.com/svg.latex?F) of ![n](https://latex.codecogs.com/svg.latex?n) variables ![X](https://latex.codecogs.com/svg.latex?X%20%3D%20%28x_1%2C...%2Cx_n%29), vector of weights ![W](https://latex.codecogs.com/svg.latex?W%20%3D%20%28w_1%2C...%2Cw_n%29). Find an assignment ![Y](https://latex.codecogs.com/svg.latex?Y%20%3D%20%28y_1%2C...%2Cy_n%29) that satisfies formula  ![F](https://latex.codecogs.com/svg.latex?F)(![FYeq1](https://latex.codecogs.com/svg.latex?F%28Y%29%3D1)) and maximizes weight function ![c](https://latex.codecogs.com/svg.latex?c)
+
+<p align="center">
+  <img width="460" height="300" src="https://latex.codecogs.com/svg.latex?c%28Y%2CW%29%20%3D%5Csum_%7Bi%3D1%7D%5En%20y_i%20w_i">
+</p>
 
 ## Solver description
 
