@@ -8,6 +8,10 @@ class FormulaAdjacencyList:
     def __getitem__(self, literal):
         return self.adjacency_list[literal]
 
+    def __iter__(self):
+        for k, v in self.adjacency_list.items():
+            yield k, v
+
     def _create_list(self, formula):
         adj_list = {var:(set(),set()) for var in formula.variables[1:]}
         for i, clause in enumerate(formula.clauses):
