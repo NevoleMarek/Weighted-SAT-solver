@@ -9,14 +9,13 @@ class FormulaAdjacencyList:
         return self.adjacency_list[literal]
 
     def _create_list(self, formula):
-        adj_list = {var:set() for var in formula.variables[1:]}
-        adj_list.update({-var:set() for var in formula.variables[1:]})
+        adj_list = {var:(set(),set()) for var in formula.variables[1:]}
         for i, clause in enumerate(formula.clauses):
             for l in clause.literals:
                 if l.is_negated:
-                    adj_list[-l.var].add(i)
+                    adj_list[l.var][1].add(i)
                 else:
-                    adj_list[l.var].add(i)
+                    adj_list[l.var][0].add(i)
         return adj_list
 
 class FormulaClauseCounter:
