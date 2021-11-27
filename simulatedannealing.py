@@ -70,16 +70,17 @@ class SimulatedAnnealing(ABC):
         ITER_LIMIT = self._iter_limit
         RESTART_LIMIT = self._restart_limit
         TEMP = self._initial_temperature()
-        SIGNAL = None
 
         best_score = 0
         best_state = None
 
         for _ in range(RESTART_LIMIT):
+            SIGNAL = None
+            temperature = TEMP
+
             current_state = self._initial_state()
             current_score = self._evaluate(current_state)
             self._stats['init'].append(current_score)
-            temperature = TEMP
 
             iter_count = 0
             while iter_count < ITER_LIMIT:
