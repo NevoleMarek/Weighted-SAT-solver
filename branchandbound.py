@@ -21,7 +21,7 @@ class BranchAndBound:
         )
         self._stats = {
             'best_weight':0,
-            'assignment': self.state.assignment
+            'state': self.state
         }
 
     def run(self):
@@ -70,7 +70,7 @@ class BranchAndBound:
         if self._sat():
             if current_weight > self._stats['best_weight']:
                 self._stats['best_weight'] = current_weight + weight_remaining
-                self._stats['solution'] = deepcopy(self.state.assignment)
+                self._stats['solution'] = deepcopy(self.state)
 
         if current_weight + weight_remaining < self._stats['best_weight']:
             return
