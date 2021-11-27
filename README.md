@@ -6,10 +6,11 @@ Benchmark report link: TBA
 
 ## Problem description
 
-Given boolean formula $F$ of $n$ variables $X = (x_1,...,x_n)$ , vector of weights $W = (w_1,...,w_n)$. Find an assignment $Y = (y_1,...,y_n)$ that satisfies formula $F$ ($F(Y)=1$) and maximizes weight function c.
-$$
+Given boolean formula $`F`$ of $`n`$ variables $`X = (x_1,...,x_n)`$ , vector of weights $`W = (w_1,...,w_n)`$. Find an assignment $`Y = (y_1,...,y_n)`$ that satisfies formula $`F`$ ($`F(Y)=1`$) and maximizes weight function c.
+
+```math
 c(Y,W) =\sum_{i=1}^n y_i w_i
-$$
+```
 
 ## Solver description
 
