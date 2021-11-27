@@ -234,18 +234,27 @@ class SA_WeightedSAT(SimulatedAnnealing):
 
     """
     Initial state methods
+    Using heuristic initialize new state.
+
+    Returns
+    -------
+    State
+        Instance of State class generated using heuristic.
     """
     def __zero(self):
+        """ Assign 0 to all variables. """
         assignment = {var:0 for var in range(1, self.formula.n_vars+1)}
         counter = self._compute_counter(assignment)
         return State(assignment, counter)
 
     def __one(self):
+        """ Assign 1 to all variables. """
         assignment = {var:1 for var in range(1, self.formula.n_vars+1)}
         counter = self._compute_counter(assignment)
         return State(assignment, counter)
 
     def __random_init(self):
+        """ Randomly assign value of 0 or 1 to variables. """
         assignment = {var:randint(0,1) for var in range(1, self.formula.n_vars+1)}
         counter = self._compute_counter(assignment)
         return State(assignment, counter)
@@ -253,14 +262,27 @@ class SA_WeightedSAT(SimulatedAnnealing):
 
     """
     Next state methods
+    Using heuristic find next state.
+
+    Parameters
+    ----------
+    current_state : State
+        Instance of State class
+
+    Returns
+    -------
+    State
+        Instance of State class which altered current_state using heuristic
+        and neighborhood operator.
     """
     def __random_next(self, current_state):
+        """ Randomly choose variable whose value will be flipped. """
         next_state = current_state.copy()
         variable = choice(list(next_state.assignment.keys()))
         return self._flip(next_state, variable)
 
     """
-    SAT Helper methods
+    State manipulation methods
     """
     def _compute_counter(self, assignment):
         """
