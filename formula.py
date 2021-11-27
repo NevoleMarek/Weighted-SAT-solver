@@ -3,11 +3,11 @@ class Literal:
     Literal class
 
     Parameters
-        ----------
-        var : int
-            Variable
-        is_negated : bool
-            True if literal is negated else False
+    ----------
+    var : int
+        Variable
+    is_negated : bool
+        True if literal is negated else False
     """
     def __init__(self, var, is_negated):
         self.var = var
