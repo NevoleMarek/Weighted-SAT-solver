@@ -37,7 +37,7 @@ class FormulaClauseCounter:
     def _create_counter(self, formula):
         counter = []
         for clause in formula.clauses:
-            counter.append([0,0])
+            counter.append([0,0,clause.size])
         return counter
 
 class State:
