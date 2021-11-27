@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from random import random
+from random import random, randint, choice
 
 import math
 
@@ -124,24 +124,24 @@ class SA_WeightedSAT(SimulatedAnnealing):
         Possible values:
         - 'zero' all variables set to value 0 (False)
         - 'one' all variables set to value 1 (True)
+        - 'random' variables are assign values of 0 or 1 randomly
 
     next_method : str, optional
-        Operator used in searching for next state, by default 'random'.
+        Heuristic of neighborhood operator used in searching for next state, by default 'random'.
         Possible values:
         - 'random' flip value of random variable
     """
     def __init__(
         self,
         formula,
-        iter_limit,
-        restart_limit,
+        iter_limit = 100,
+        restart_limit = 2,
         alpha = 0.99,
         beta = 0,
         temp_prob = 0.8,
         init_method = 'zero',
         next_method = 'random'
     ):
-
         super().__init__(
             iter_limit,
             restart_limit
@@ -153,15 +153,15 @@ class SA_WeightedSAT(SimulatedAnnealing):
         self.init_method = init_method
         self.next_method = next_method
         self.adj_list = FormulaAdjacencyList(formula)
-        self.counter = FormulaClauseCounter(formula)
         self.clause_weight = sum(formula.weights) + 1
 
         self.init_m = {
             'zero':self.__zero,
-            'one':self.__one
+            'one':self.__one,
+            'random':self.__random_init
         }
         self.next_m = {
-            'random':self.__random
+            'random':self.__random_next
         }
 
     def _initial_state(self):
@@ -183,10 +183,10 @@ class SA_WeightedSAT(SimulatedAnnealing):
             Value of score function.
         """
         score = 0
-        for c in self.counter:
+        for c in state.counter:
             if c[0] > 0:
                 score += self.clause_weight
-        for var, val in self.assignment.items():
+        for var, val in state.assignment.items():
             if val == 1:
                 score += self.formula.weights[var]
         return score
@@ -226,9 +226,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
             Temperature
         """
         cntr = dict()
-        for i in range(self.formula.n_vars):
-            idx = i+1
-            cntr[idx] = abs(len(self.adj_list[idx]) - len(self.adj_list[-idx]))
+        for var in self.formula.variables[1:]:
+            cntr[var] = abs(len(self.adj_list[var][0]) - len(self.adj_list[var][1]))
 
         delta = max(cntr.values()) * self.clause_weight
         return abs(delta/math.log(self.temp_prob))
@@ -237,14 +236,96 @@ class SA_WeightedSAT(SimulatedAnnealing):
     Initial state methods
     """
     def __zero(self):
-        pass
+        assignment = {var:0 for var in range(1, self.formula.n_vars+1)}
+        counter = self._compute_counter(assignment)
+        return State(assignment, counter)
 
     def __one(self):
-        pass
+        assignment = {var:1 for var in range(1, self.formula.n_vars+1)}
+        counter = self._compute_counter(assignment)
+        return State(assignment, counter)
+
+    def __random_init(self):
+        assignment = {var:randint(0,1) for var in range(1, self.formula.n_vars+1)}
+        counter = self._compute_counter(assignment)
+        return State(assignment, counter)
+
 
     """
     Next state methods
     """
-    def __random(self, current_state):
-        pass
+    def __random_next(self, current_state):
+        next_state = current_state.copy()
+        variable = choice(list(next_state.assignment.keys()))
+        return self._flip(next_state, variable)
 
+    """
+    SAT Helper methods
+    """
+    def _compute_counter(self, assignment):
+        """
+        Adjust counter data structure to correspond to 'assignment'.
+
+        Parameters
+        ----------
+        assignment : Dict
+            key-value pairs where key is variable and value is 0 or 1.
+
+        Returns
+        -------
+        FormulaClauseCounter
+            Updated counter data structure.
+        """
+        counter = FormulaClauseCounter(self.formula)
+        for variable, value in assignment.items():
+            for c in self.adj_list[variable][0]:
+                counter[c][int(0==value)] += 1
+            for c in self.adj_list[variable][1]:
+                counter[c][int(1==value)] += 1
+        return counter
+
+    def _flip(self, state, variable):
+        """
+        Flip value of 'variable' and update counters.
+
+        Parameters
+        ----------
+        state : State
+            State where where 'variable' will be flipped.
+        variable : int
+            Integer index of variable.
+
+        Returns
+        -------
+        State
+            State with value of 'variable' flipped.
+        """
+        new_value = int (not state.assignment[variable])
+        state.assignment[variable] = new_value
+        for c in self.adj_list[variable][0]:
+            state.counter[c][int(0==new_value)] += 1
+            state.counter[c][int(1==new_value)] -= 1
+        for c in self.adj_list[variable][1]:
+            state.counter[c][int(0==new_value)] -= 1
+            state.counter[c][int(1==new_value)] += 1
+        return state
+
+    def eval(self, state):
+        """
+        Compute weight of 'state'.
+
+        Parameters
+        ----------
+        state : State
+            Instance of State class.
+
+        Returns
+        -------
+        Numeric type
+            Weight of assignment of 'state'.
+        """
+        score = 0
+        for var, val in state.assignment.items():
+            if val == 1:
+                score += self.formula.weights[var]
+        return score
