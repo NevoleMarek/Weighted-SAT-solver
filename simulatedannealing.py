@@ -43,6 +43,10 @@ class SimulatedAnnealing(ABC):
     def _next_state(self, current_state):
         """
         Find 'next_state' from 'current_state' using neighborhood operator.
+        This method can return signal to force stop current search.
+        Signal has to be of value equal to True to work correctly.
+        Return next_state and signal value to force stop.
+        Return next_state and None to not use signal.
         """
         pass
 
@@ -66,6 +70,7 @@ class SimulatedAnnealing(ABC):
         ITER_LIMIT = self._iter_limit
         RESTART_LIMIT = self._restart_limit
         TEMP = self._initial_temperature()
+        SIGNAL = None
 
         best_score = 0
         best_state = None
@@ -78,7 +83,9 @@ class SimulatedAnnealing(ABC):
 
             iter_count = 0
             while iter_count < ITER_LIMIT:
-                next_state = self._next_state(current_state)
+                next_state, SIGNAL = self._next_state(current_state)
+                if SIGNAL:
+                    break
                 next_score = self._evaluate(next_state)
 
                 if  next_score > current_score or \
@@ -145,6 +152,9 @@ class SA_WeightedSAT(SimulatedAnnealing):
         - 'random' flip value of random variable
         - 'greedy' flip value of variable that results in highest possible score in
                 neighborhood of current state
+        - 'greediest' flip value of variable that results in highest possible
+                score in neighborhood of current state or keep current state if
+                its score is higher.
     """
     def __init__(
         self,
@@ -178,7 +188,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
         }
         self.next_m = {
             'random':self.__random_next,
-            'greedy':self.__greedy_next
+            'greedy':self.__greedy_next,
+            'greediest':self.__greediest_next
         }
 
     def _initial_state(self):
@@ -308,12 +319,15 @@ class SA_WeightedSAT(SimulatedAnnealing):
     State
         Instance of State class which altered current_state using heuristic
         and neighborhood operator.
+    None or Bool-like
+        If equals to True then 1 restart will be force stopped.
+
     """
     def __random_next(self, current_state):
         """ Randomly choose variable whose value will be flipped. """
         next_state = current_state.copy()
         variable = choice(list(next_state.assignment.keys()))
-        return self._flip(next_state, variable)
+        return self._flip(next_state, variable), None
 
     def __greedy_next(self, current_state):
         """ Find the best state in neighborhood of 'current_state'. """
@@ -333,10 +347,34 @@ class SA_WeightedSAT(SimulatedAnnealing):
             elif score == best_score:
                 best_variables.append(variable)
         if best_variable:
-            return self._flip(next_state, choice(best_variables))
+            return self._flip(next_state, choice(best_variables)), None
         else:
-            return next_state
+            return next_state, True
 
+    def __greediest_next(self, current_state):
+        """
+        Find the best state in neighborhood of 'current_state'.
+        State has to be better than 'current_state'
+        """
+        next_state = current_state.copy()
+        best_score = self._evaluate(current_state)
+        best_variable = 0
+        best_variables = []
+        for variable in self.formula.variables[1:]:
+            next_state = self._flip(next_state, variable)
+            score = self._evaluate(next_state)
+            next_state = self._flip(next_state, variable)
+            if score > best_score:
+                best_score = score
+                best_variable = variable
+                best_variables.clear()
+                best_variables.append(variable)
+            elif score == best_score:
+                best_variables.append(variable)
+        if best_variable:
+            return self._flip(next_state, choice(best_variables)), None
+        else:
+            return current_state, True
 
     """
     State manipulation methods
