@@ -83,9 +83,9 @@ class SimulatedAnnealing(ABC):
 
             iter_count = 0
             while iter_count < ITER_LIMIT:
-                next_state, SIGNAL = self._next_state(current_state)
                 if SIGNAL:
                     break
+                next_state, SIGNAL = self._next_state(current_state)
                 next_score = self._evaluate(next_state)
 
                 if  next_score > current_score or \
@@ -148,6 +148,7 @@ class SA_WeightedSAT(SimulatedAnnealing):
     next_method : str, optional
         Heuristic of neighborhood operator used in searching for next state,
         by default 'random'.
+        Ties broken randomly.
         Possible values:
         - 'random' flip value of random variable
         - 'greedy' flip value of variable that results in highest possible score in
@@ -155,6 +156,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
         - 'greediest' flip value of variable that results in highest possible
                 score in neighborhood of current state or keep current state if
                 its score is higher.
+        - 'walksat' WalkSAT heuristic. If there are no unsat clauses, greediest
+                heuristic is used.
     """
     def __init__(
         self,
@@ -189,7 +192,8 @@ class SA_WeightedSAT(SimulatedAnnealing):
         self.next_m = {
             'random':self.__random_next,
             'greedy':self.__greedy_next,
-            'greediest':self.__greediest_next
+            'greediest':self.__greediest_next,
+            'walksat':self.__walksat_next
         }
 
     def _initial_state(self):
@@ -375,6 +379,40 @@ class SA_WeightedSAT(SimulatedAnnealing):
             return self._flip(next_state, choice(best_variables)), None
         else:
             return current_state, True
+
+    def __walksat_next(self, current_state):
+        """
+        WalkSAT heuristic
+        """
+        next_state = current_state.copy()
+        unsat_clauses = []
+        for clause in range(len(self.formula.clauses)):
+            if next_state.counter[clause][0] == 0:
+                unsat_clauses.append(clause)
+        if not unsat_clauses:
+            return self.__greediest_next(current_state)
+        unsat_clause = self.formula.clauses[choice(unsat_clauses)]
+        if random() > 0.5: #random move
+            return self._flip(next_state, choice(unsat_clause.literals).var), None
+        else: #greedy move
+            best_score = -1
+            best_variable = 0
+            best_variables = []
+            for literal in unsat_clause.literals:
+                next_state = self._flip(next_state, literal.var)
+                score = self._evaluate(next_state)
+                next_state = self._flip(next_state, literal.var)
+                if score > best_score:
+                    best_score = score
+                    best_variable = literal.var
+                    best_variables.clear()
+                    best_variables.append(literal.var)
+                elif score == best_score:
+                    best_variables.append(literal.var)
+            if best_variable:
+                return self._flip(next_state, choice(best_variables)), None
+            else:
+                return self._flip(next_state, choice(unsat_clause.literals).var), None
 
     """
     State manipulation methods
