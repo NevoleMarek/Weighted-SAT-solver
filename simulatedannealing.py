@@ -1,19 +1,22 @@
 from abc import ABC, abstractmethod
 from random import random, randint, choice
+from collections import deque
 
 import math
 
-from utils import FormulaAdjacencyList, FormulaClauseCounter, State
+from utils import FormulaAdjacencyList, FormulaClauseCounter, State, StoppingCriterion
 
 class SimulatedAnnealing(ABC):
     """ Abstract class of simulated annealing. """
     def __init__(
         self,
         iter_limit = 100,
-        restart_limit = 1
+        restart_limit = 1,
+        threshold = 1e-6
     ):
         self._iter_limit = iter_limit
         self._restart_limit = restart_limit
+        self._threshold = threshold
         self._stats = {
             'iterations':0,
             'init':[]
@@ -66,6 +69,13 @@ class SimulatedAnnealing(ABC):
         """
         pass
 
+    def stop_criterion(self):
+        if not self.buffer.full():
+            return False
+        if self.buffer.avg() < self._threshold:
+            return True
+        return False
+
     def run(self):
         ITER_LIMIT = self._iter_limit
         RESTART_LIMIT = self._restart_limit
@@ -80,10 +90,12 @@ class SimulatedAnnealing(ABC):
 
             current_state = self._initial_state()
             current_score = self._evaluate(current_state)
+            self.buffer = StoppingCriterion(current_score, ITER_LIMIT)
             self._stats['init'].append(current_score)
 
-            iter_count = 0
-            while iter_count < ITER_LIMIT:
+
+            while not self.stop_criterion():
+
                 if SIGNAL:
                     break
                 next_state, SIGNAL = self._next_state(current_state)
@@ -93,14 +105,12 @@ class SimulatedAnnealing(ABC):
                     random() < math.exp((next_score - current_score)/temperature):
                     current_state = next_state
                     current_score = next_score
-                    iter_count = 0
 
                     if current_score > best_score:
                         best_score = current_score
                         best_state = current_state
-                else:
-                    iter_count += 1
 
+                self.buffer.add(current_score)
                 temperature = self._cooling_schedule(temperature)
                 self._stats['iterations'] +=1
 
@@ -157,7 +167,7 @@ class SA_WeightedSAT(SimulatedAnnealing):
         - 'greediest' flip value of variable that results in highest possible
                 score in neighborhood of current state or keep current state if
                 its score is higher.
-        - 'walksat' WalkSAT heuristic. If there are no unsat clauses, greediest
+        - 'walksat' WalkSAT heuristic. If there are no unsat clauses, greedy
                 heuristic is used.
     """
     def __init__(
@@ -171,9 +181,11 @@ class SA_WeightedSAT(SimulatedAnnealing):
         init_method = 'greedy',
         next_method = 'greedy'
     ):
+        threshold = sum(formula.weights)/(formula.n_vars*iter_limit)
         super().__init__(
             iter_limit,
-            restart_limit
+            restart_limit,
+            threshold
         )
         self.formula = formula
         self.alpha = alpha
@@ -247,10 +259,9 @@ class SA_WeightedSAT(SimulatedAnnealing):
     def _initial_temperature(self):
         """
         Initial temperature calculation is divided to 2 steps.
-        First step is to find maximum delta of clauses that would be satisfied
-        and unsatisfied by any variable flip. Which approximates the worst
-        possible flip.
-        In second step calculate the temperature as if the flip found in step one
+        First step is to find average delta of evaluate function of 2 neighbouring
+        moves.
+        In second step calculate the temperature as if the average move in step one
         was to be accepted with 'temp_prob' probability.
 
         Returns
@@ -258,11 +269,16 @@ class SA_WeightedSAT(SimulatedAnnealing):
         Numeric type
             Temperature
         """
-        cntr = dict()
-        for var in self.formula.variables[1:]:
-            cntr[var] = abs(len(self.adj_list[var][0]) - len(self.adj_list[var][1]))
-
-        delta = max(cntr.values()) * self.clause_weight
+        #cntr = dict()
+        #for var in self.formula.variables[1:]:
+        #    cntr[var] = abs(len(self.adj_list[var][0]) - len(self.adj_list[var][1]))
+        CNT = 100
+        sum_delta = 0
+        for i in range(CNT):
+            st = self.__random_init()
+            nst, _ = self.__random_next(st)
+            sum_delta += abs(self._evaluate(st)-self._evaluate(nst))
+        delta = sum_delta/CNT
         return abs(delta/math.log(self.temp_prob))
 
     """
@@ -391,7 +407,7 @@ class SA_WeightedSAT(SimulatedAnnealing):
             if next_state.counter[clause][0] == 0:
                 unsat_clauses.append(clause)
         if not unsat_clauses:
-            return self.__greediest_next(current_state)
+            return self.__greedy_next(current_state)
         unsat_clause = self.formula.clauses[choice(unsat_clauses)]
         if random() > 0.5: #random move
             return self._flip(next_state, choice(unsat_clause.literals).var), None
