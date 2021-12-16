@@ -1,4 +1,5 @@
 import copy
+from collections import deque
 
 class FormulaAdjacencyList:
     """ Class for Adjacency list of formula. """
@@ -60,3 +61,22 @@ class State:
     def copy(self):
         """ Copy itself. """
         return copy.deepcopy(self)
+
+class StoppingCriterion:
+    """
+    Class handling stopping criterion of simulated annealing.
+    Stores last maxlen evaluation function changes.
+    """
+    def __init__(self, score, maxlen):
+        self.buffer = deque(maxlen=maxlen)
+        self.last_score = score
+
+    def add(self, score):
+        self.buffer.append(abs(self.last_score - score))
+        self.last_score = score
+
+    def avg(self):
+        return sum(self.buffer)/len(self.buffer)
+
+    def full(self):
+        return self.buffer.maxlen == len(self.buffer)
